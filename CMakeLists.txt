@@ -25,16 +25,15 @@ set(CMAKE_CONFIGURATION_TYPES "Debug;Release")
 set(CMAKE_XCODE_GENERATE_SCHEME TRUE)
 
 # Game Name Customization
-set(PLAYDATE_GAME_NAME got_beef)
-set(PLAYDATE_GAME_DEVICE hello_world_DEVICE)
+set(PLAYDATE_GAME_NAME 3D)
+set(PLAYDATE_GAME_DEVICE 3D_DEVICE)
 
 project(${PLAYDATE_GAME_NAME} C ASM)
 
 if (TOOLCHAIN STREQUAL "armgcc")
-    add_executable(${PLAYDATE_GAME_DEVICE} src/main.c src/bayer.h)
+    add_executable(${PLAYDATE_GAME_DEVICE} src/main.c src/renderer/renderer.h src/renderer/renderer.c src/renderer/bayer2.h src/renderer/bayer8.h src/renderer/bayer.c src/renderer/bayer.h src/renderer/bayer4.h src/application.c src/application.h src/application.h src/renderer/vector3.h src/renderer/triangle.h src/renderer/mesh.h)
 else ()
-    add_library(${PLAYDATE_GAME_NAME} SHARED src/main.c src/bayer.h)
+    add_library(${PLAYDATE_GAME_NAME} SHARED src/main.c src/renderer/renderer.h src/renderer/renderer.c src/renderer/bayer2.h src/renderer/bayer8.h src/renderer/bayer.c src/renderer/bayer.h src/renderer/bayer4.h src/application.c src/application.h src/application.h src/renderer/vector3.h src/renderer/triangle.h src/renderer/mesh.h)
 endif ()
 
 include(${SDK}/C_API/buildsupport/playdate_game.cmake)
-
