@@ -31,9 +31,17 @@ set(PLAYDATE_GAME_DEVICE 3D_DEVICE)
 project(${PLAYDATE_GAME_NAME} C ASM)
 
 if (TOOLCHAIN STREQUAL "armgcc")
-    add_executable(${PLAYDATE_GAME_DEVICE} src/main.c src/renderer/renderer.h src/renderer/renderer.c src/renderer/bayer2.h src/renderer/bayer8.h src/renderer/bayer.c src/renderer/bayer.h src/renderer/bayer4.h src/application.c src/application.h src/application.h src/renderer/vector3.h src/renderer/triangle.h src/renderer/mesh.h)
+    add_executable(${PLAYDATE_GAME_DEVICE} src/main.c src/renderer/renderer.h src/renderer/renderer.c src/renderer/bayer2.h src/renderer/bayer8.h src/renderer/bayer.c src/renderer/bayer.h src/renderer/bayer4.h src/application.c src/application.h src/application.h src/renderer/vector3.h src/renderer/triangle.h src/renderer/mesh.h
+            src/renderer/matrix4x4.h
+            src/renderer/matrix4x4.c
+            src/renderer/vector3.c
+            src/renderer/triangle.c)
 else ()
-    add_library(${PLAYDATE_GAME_NAME} SHARED src/main.c src/renderer/renderer.h src/renderer/renderer.c src/renderer/bayer2.h src/renderer/bayer8.h src/renderer/bayer.c src/renderer/bayer.h src/renderer/bayer4.h src/application.c src/application.h src/application.h src/renderer/vector3.h src/renderer/triangle.h src/renderer/mesh.h)
+    add_library(${PLAYDATE_GAME_NAME} SHARED src/main.c src/renderer/renderer.h src/renderer/renderer.c src/renderer/bayer2.h src/renderer/bayer8.h src/renderer/bayer.c src/renderer/bayer.h src/renderer/bayer4.h src/application.c src/application.h src/application.h src/renderer/vector3.h src/renderer/triangle.h src/renderer/mesh.h
+            src/renderer/matrix4x4.h
+            src/renderer/matrix4x4.c
+            src/renderer/vector3.c
+            src/renderer/triangle.c)
 endif ()
 
 include(${SDK}/C_API/buildsupport/playdate_game.cmake)

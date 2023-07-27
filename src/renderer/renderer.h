@@ -5,12 +5,8 @@
 #ifndef RENDERER_H
 #define RENDERER_H
 
-//#include "vector3.h"
-//#include "Triangle.h"
-//#include "mesh.h"
-//#include "matrix4x4.h"
-
 #include "pd_api.h"
+#include "matrix4x4.h"
 
 typedef struct {
     int refreshRate;
@@ -19,6 +15,8 @@ typedef struct {
 
     int rows;
     int columns;
+
+    Matrix4x4 projectionMatrix;
 } Renderer;
 
 Renderer* renderer_create(PlaydateAPI* api, int refreshRate, int scale);

@@ -8,7 +8,9 @@
 #include "vector3.h"
 
 typedef struct {
-    vector3 points[3];
+    Vector3 points[3];
 } Triangle;
+
+Vector3 triangle_normal(Triangle* triangle);
 
 #endif //INC_3D_TRIANGLE_H

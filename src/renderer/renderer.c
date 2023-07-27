@@ -10,13 +10,23 @@ LCDFont* font = NULL;
 
 const int BAYER_TABLE = BAYER_8;
 
+Mesh mesh;
+
 void set_pixel_on(uint8_t* data, int byteIndex, int columnIndex);
 
 void set_pixel_off(uint8_t* data, int byteIndex, int columnIndex);
 
 int calculate_byte_index(int rowIndex, int columnIndex);
 
-void renderer_draw_line(uint8_t* frame, int x1, int y1, int x2, int y2);
+void renderer_draw_line(uint8_t* frame, int x1, int y1, int x2, int y2, int frame_width, int frame_height);
+
+void renderer_draw_line_by_vectors(uint8_t* data, Vector3 v1, Vector3 v2, int frame_width, int frame_height);
+
+void renderer_draw_line_by_triangle(uint8_t* data, Triangle triangle, int frame_width, int frame_height);
+
+void renderer_draw_normal(Renderer* renderer, uint8_t* data, Triangle triangle);
+
+Vector3 renderer_transform_to_2d_space(Renderer* renderer, Vector3* vector);
 
 /**
  * \brief Creates a new renderer.
@@ -36,7 +46,12 @@ Renderer* renderer_create(PlaydateAPI* api, int refreshRate, int scale) {
     renderer->scale = scale;
     renderer->rows = LCD_ROWS / scale;
     renderer->columns = LCD_COLUMNS / scale;
-
+    renderer->projectionMatrix = matrix4X4_projection(
+            60,
+            (float) renderer->columns / (float) renderer->rows,
+            0.1f,
+            100.0f
+    );
     renderer->fontpath = "/System/Fonts/Roobert-10-Bold.pft";
     renderer_init(renderer, api);
 
@@ -65,24 +80,107 @@ void renderer_init(Renderer* renderer, PlaydateAPI* api) {
 
     if (font == NULL)
         api->system->error("%s:%i Couldn't load font %s: %s", __FILE__, __LINE__, renderer->fontpath, err);
+
+    mesh = create_cube_mesh();
 }
 
+float last_angle = 400.0f;
 
 void renderer_draw(Renderer* renderer, PlaydateAPI* api) {
     const struct playdate_graphics* graphics = api->graphics;
-    float angle = (api->system->getCrankAngle() / 360.0f) * 63.0f;
+    float angle = api->system->getCrankAngle();
+    if (angle == last_angle)
+        return;
+    last_angle = angle;
+
+    float theta_radians = angle * PI / 180.0f;
+
+    Matrix4x4 rotationX = {
+            .m = {
+                    {1.0f, 0.0f,                0.0f,                 0.0f},
+                    {0.0f, cosf(theta_radians), -sinf(theta_radians), 0.0f},
+                    {0.0f, sinf(theta_radians), cosf(theta_radians),  0.0f},
+                    {0.0f, 0.0f,                0.0f,                 1.0f}
+            }
+    };
+
+    Matrix4x4 rotationZ = {
+            .m = {
+                    {cosf(theta_radians), -sinf(theta_radians), 0.0f, 0.0f},
+                    {sinf(theta_radians), cosf(theta_radians),  0.0f, 0.0f},
+                    {0.0f,                0.0f,                 1.0f, 0.0f},
+                    {0.0f,                0.0f,                 0.0f, 1.0f}
+            }
+    };
+
+    Matrix4x4 rotationY = {
+            .m = {
+                    {cosf(theta_radians),  0.0f, sinf(theta_radians), 0.0f},
+                    {0.0f,                 1.0f, 0.0f,                0.0f},
+                    {-sinf(theta_radians), 0.0f, cosf(theta_radians), 0.0f},
+                    {0.0f,                 0.0f, 0.0f,                1.0f}
+            }
+    };
+
+    Matrix4x4 rotation;
+    matrix4x4_multiply(&rotationX, &rotationZ, &rotation);
+    matrix4x4_multiply(&rotation, &rotationY, &rotation);
 
     uint8_t* data = graphics->getFrame();
 
     graphics->clear(kColorWhite);
 
-    renderer_draw_line(data, 0, 0, 100, 20);
+    // For each triangle in mesh
+    for (int i = 0; i < mesh.triangleCount; i++) {
+        Triangle triangleTranslated = mesh.triangles[i];
+        Triangle triangleRotate = mesh.triangles[i];
+        Triangle triangleProjected = mesh.triangles[i];
 
-    for (int rowIndex = 0; rowIndex < renderer->rows; rowIndex++) {
-        for (int columnIndex = 0; columnIndex < renderer->columns; columnIndex++) {
-            int byteIndex = calculate_byte_index(rowIndex, columnIndex);
+        // Apply rotation to triangle
+        for (int p = 0; p < 3; p++) {
+            vector3_multiply_matrix4x4(
+                    &mesh.triangles[i].points[p],
+                    &triangleRotate.points[p],
+                    &rotation
+            );
+        }
 
-            // Get the corresponding value from the Bayer matrix
+        triangleTranslated = triangleRotate;
+
+        // Move triangle away from camera
+        for (int p = 0; p < 3; p++) {
+            triangleTranslated.points[p].z += 3.0f;
+        }
+
+        Vector3 normal = triangle_normal(&triangleTranslated);
+
+        if (normal.z >= 0) {
+            continue;
+        }
+
+        // Project triangle from 3D to 2D
+        for (int p = 0; p < 3; p++) {
+            vector3_multiply_matrix4x4(
+                    &triangleTranslated.points[p],
+                    &triangleProjected.points[p],
+                    &renderer->projectionMatrix
+            );
+
+            renderer_transform_to_2d_space(renderer, &triangleProjected.points[p]);
+        }
+
+        renderer_draw_line_by_triangle(data, triangleProjected, renderer->columns, renderer->rows);
+
+        renderer_draw_normal(renderer, data, triangleTranslated);
+    }
+
+    api->graphics->markUpdatedRows(0, renderer->rows - 1);
+
+//    for (int rowIndex = 0; rowIndex < renderer->rows; rowIndex++) {
+//        for (int columnIndex = 0; columnIndex < renderer->columns; columnIndex++) {
+//            int byteIndex = calculate_byte_index(rowIndex, columnIndex);
+
+    // Get the corresponding value from the Bayer matrix
 //            int bayer = bayer_value(rowIndex, columnIndex, BAYER_TABLE);
 //
 //            // TODO: Implement a real way to get the brightness of a pixel.
@@ -93,8 +191,8 @@ void renderer_draw(Renderer* renderer, PlaydateAPI* api) {
 //            } else {
 //                set_pixel_off(data, byteIndex, columnIndex);
 //            }
-        }
-    }
+//        }
+//    }
 }
 
 /**
@@ -109,7 +207,7 @@ void renderer_draw(Renderer* renderer, PlaydateAPI* api) {
 * @param y2    The y-coordinate of the ending point of the line.
 */
 
-void renderer_draw_line(uint8_t* frame, int x1, int y1, int x2, int y2) {
+void renderer_draw_line(uint8_t* frame, int x1, int y1, int x2, int y2, int frame_width, int frame_height) {
     int dx = abs(x2 - x1);
     int dy = abs(y2 - y1);
     int sx = x1 < x2 ? 1 : -1;
@@ -117,10 +215,12 @@ void renderer_draw_line(uint8_t* frame, int x1, int y1, int x2, int y2) {
     int err = (dx > dy ? dx : -dy) / 2;
     int e2;
 
-    while (true) {
-        int columnIndex = x1 % 8;
-        int byteIndex = calculate_byte_index(y1, x1);
-        set_pixel_off(frame, byteIndex, columnIndex);
+    while (1) {
+        if (x1 >= 0 && x1 < frame_width && y1 >= 0 && y1 < frame_height) {
+            int columnIndex = x1 % 8;
+            int byteIndex = calculate_byte_index(y1, x1);
+            set_pixel_off(frame, byteIndex, columnIndex);
+        }
 
         if (x1 == x2 && y1 == y2) {
             break;
@@ -135,6 +235,16 @@ void renderer_draw_line(uint8_t* frame, int x1, int y1, int x2, int y2) {
             y1 += sy;
         }
     }
+}
+
+void renderer_draw_line_by_vectors(uint8_t* data, Vector3 v1, Vector3 v2, int frame_width, int frame_height) {
+    renderer_draw_line(
+            data,
+            (int) roundf(v1.x), (int) roundf(v1.y),
+            (int) roundf(v2.x), (int) roundf(v2.y),
+            frame_width,
+            frame_height
+    );
 }
 
 /**
@@ -181,6 +291,69 @@ void set_pixel_on(uint8_t* data, int byteIndex, int columnIndex) {
 
 int calculate_byte_index(int rowIndex, int columnIndex) {
     return rowIndex * LCD_ROWSIZE + columnIndex / 8;
+}
+
+/**
+ * Renders a triangle by drawing lines between its vertices.
+ *
+ * @param data The buffer to render the triangle on.
+ * @param triangle The triangle to be rendered.
+ */
+
+void renderer_draw_line_by_triangle(uint8_t* data, Triangle triangle, int frame_width, int frame_height) {
+    renderer_draw_line_by_vectors(data, triangle.points[0], triangle.points[1], frame_width, frame_height);
+    renderer_draw_line_by_vectors(data, triangle.points[1], triangle.points[2], frame_width, frame_height);
+    renderer_draw_line_by_vectors(data, triangle.points[2], triangle.points[0], frame_width, frame_height);
+}
+
+void renderer_draw_normal(Renderer* renderer, uint8_t* data, Triangle triangle) {
+    Vector3 normal = triangle_normal(&triangle);
+
+    Vector3 scaledNormal = vector3_scalar_multiply(normal, 0.25f);
+
+    Vector3 origin = vector3_midpoint(
+            triangle.points[0],
+            triangle.points[1],
+            triangle.points[2]
+    );
+    Vector3 normalTranslated = vector3_add(origin, scaledNormal);
+
+    Vector3 start = {0};
+    Vector3 end = {0};
+
+    vector3_multiply_matrix4x4(
+            &origin,
+            &start,
+            &renderer->projectionMatrix
+    );
+    renderer_transform_to_2d_space(renderer, &start);
+
+    vector3_multiply_matrix4x4(
+            &normalTranslated,
+            &end,
+            &renderer->projectionMatrix
+    );
+    renderer_transform_to_2d_space(renderer, &end);
+
+    renderer_draw_line_by_vectors(data, start, end, renderer->columns, renderer->rows);
+}
+
+/**
+ * Transforms a 3D vector to 2D space based on the provided renderer.
+ *
+ * @param renderer The Renderer object used for the transformation.
+ * @param vector The 3D vector to be transformed.
+ * @return The transformed 3D vector in 2D space.
+ */
+
+Vector3 renderer_transform_to_2d_space(Renderer* renderer, Vector3* vector) {
+    vector->x += 1.0f;
+    vector->y += 1.0f;
+
+    vector->x *= 0.5f * (float) renderer->columns;
+    vector->y *= 0.5f * (float) renderer->rows;
+
+    return *vector;
 }
 
 void renderer_cleanup(Renderer* renderer) {

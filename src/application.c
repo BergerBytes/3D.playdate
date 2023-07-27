@@ -10,7 +10,7 @@ static void application_init(Application* app);
 Application* application_create_default(PlaydateAPI* api) {
     Application* app = malloc(sizeof(Application));
     app->api = api;
-    app->renderer = renderer_create(api, 30, 2);
+    app->renderer = renderer_create(api, 50, 1);
 
     application_init(app);
 
@@ -22,7 +22,7 @@ void application_destroy(Application* app) {
     free(app);
 }
 
-static void application_init(Application* app) {}
+static void application_init(Application* app) { }
 
 int application_update(Application* app, PlaydateAPI* api) {
     renderer_draw(app->renderer, api);
