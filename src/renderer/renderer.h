@@ -16,6 +16,7 @@ typedef struct {
     int rows;
     int columns;
 
+    Vector3 cameraPosition;
     Matrix4x4 projectionMatrix;
 } Renderer;
 
@@ -26,6 +27,5 @@ void renderer_init(Renderer* renderer, PlaydateAPI* api);
 void renderer_draw(Renderer* renderer, PlaydateAPI* api);
 
 void renderer_cleanup(Renderer* renderer);
-
 
 #endif /* RENDERER_H */

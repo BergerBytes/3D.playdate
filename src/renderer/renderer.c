@@ -24,9 +24,23 @@ void renderer_draw_line_by_vectors(uint8_t* data, Vector3 v1, Vector3 v2, int fr
 
 void renderer_draw_line_by_triangle(uint8_t* data, Triangle triangle, int frame_width, int frame_height);
 
+void renderer_draw_fill(
+        uint8_t* frame,
+        int x1, int y1,
+        int x2, int y2,
+        int x3, int y3,
+        int frame_width, int frame_height
+);
+
+void renderer_draw_fill_by_triangle(uint8_t* data, Triangle triangle, int frame_width, int frame_height);
+
 void renderer_draw_normal(Renderer* renderer, uint8_t* data, Triangle triangle);
 
 Vector3 renderer_transform_to_2d_space(Renderer* renderer, Vector3* vector);
+
+int min(int a, int b);
+
+int max(int a, int b);
 
 /**
  * \brief Creates a new renderer.
@@ -46,6 +60,7 @@ Renderer* renderer_create(PlaydateAPI* api, int refreshRate, int scale) {
     renderer->scale = scale;
     renderer->rows = LCD_ROWS / scale;
     renderer->columns = LCD_COLUMNS / scale;
+    renderer->cameraPosition = (Vector3) {.x = 0.0f, .y = 0.0f, .z = 0.0f};
     renderer->projectionMatrix = matrix4X4_projection(
             60,
             (float) renderer->columns / (float) renderer->rows,
@@ -152,9 +167,15 @@ void renderer_draw(Renderer* renderer, PlaydateAPI* api) {
             triangleTranslated.points[p].z += 3.0f;
         }
 
-        Vector3 normal = triangle_normal(&triangleTranslated);
+        float dot = vector3_dot_product(
+                triangle_normal(&triangleTranslated),
+                vector3_subtract(
+                        triangleTranslated.points[0],
+                        renderer->cameraPosition
+                )
+        );
 
-        if (normal.z >= 0) {
+        if (dot >= 0) {
             continue;
         }
 
@@ -169,9 +190,10 @@ void renderer_draw(Renderer* renderer, PlaydateAPI* api) {
             renderer_transform_to_2d_space(renderer, &triangleProjected.points[p]);
         }
 
+        renderer_draw_fill_by_triangle(data, triangleProjected, renderer->columns, renderer->rows);
         renderer_draw_line_by_triangle(data, triangleProjected, renderer->columns, renderer->rows);
 
-        renderer_draw_normal(renderer, data, triangleTranslated);
+//        renderer_draw_normal(renderer, data, triangleTranslated);
     }
 
     api->graphics->markUpdatedRows(0, renderer->rows - 1);
@@ -193,6 +215,96 @@ void renderer_draw(Renderer* renderer, PlaydateAPI* api) {
 //            }
 //        }
 //    }
+}
+
+inline int min(int a, int b) {
+    return (a < b) ? a : b;
+}
+
+inline int max(int a, int b) {
+    return (a > b) ? a : b;
+}
+
+/**
+ * @brief Renders a filled triangle onto a frame buffer.
+ *
+ * The function calculates the bounding box of the triangle defined by (x1, y1), (x2, y2),
+ * and (x3, y3) vertices. It then calculates the Barycentric coordinates at the vertices.
+ * If the triangle vertices are in clockwise order, the function flips the comparisons.
+ * It iterates through each pixel within the bounding box and checks if the pixel is on or
+ * inside all edges of the triangle using Barycentric coordinates.
+ * If the pixel is inside the triangle, it sets it to off in the given frame buffer.
+ *
+ * @param frame Pointer to the frame buffer
+ * @param x1 X-coordinate of the first vertex of the triangle
+ * @param y1 Y-coordinate of the first vertex of the triangle
+ * @param x2 X-coordinate of the second vertex of the triangle
+ * @param y2 Y-coordinate of the second vertex of the triangle
+ * @param x3 X-coordinate of the third vertex of the triangle
+ * @param y3 Y-coordinate of the third vertex of the triangle
+ * @param frame_width Width of the frame buffer
+ * @param frame_height Height of the frame buffer
+ */
+
+void renderer_draw_fill(
+        uint8_t* frame,
+        int x1, int y1,
+        int x2, int y2,
+        int x3, int y3,
+        int frame_width, int frame_height
+) {
+    // Calculate bounding box of the triangle
+    int xMin = min(min(x1, x2), x3), xMax = max(max(x1, x2), x3);
+    int yMin = min(min(y1, y2), y3), yMax = max(max(y1, y2), y3);
+
+    // Calculate Barycentric coordinates at vertices
+    int f12 = (y1 - y2) * x1 + (x2 - x1) * y1;
+    int f23 = (y2 - y3) * x2 + (x3 - x2) * y2;
+    int f31 = (y3 - y1) * x3 + (x1 - x3) * y3;
+
+    // If the triangle vertices are in clockwise order flip the comparisons
+    bool posTri = f12 < 0 || f23 < 0 || f31 < 0;
+
+    for (int y = yMin; y <= yMax; y++) {
+        for (int x = xMin; x <= xMax; x++) {
+            int p12 = (y1 - y2) * x + (x2 - x1) * y;
+            int p23 = (y2 - y3) * x + (x3 - x2) * y;
+            int p31 = (y3 - y1) * x + (x1 - x3) * y;
+
+            // If p is on or inside all edges, render pixel
+            if ((posTri == (p12 <= 0)) && (posTri == (p23 <= 0)) && (posTri == (p31 <= 0))) {
+//                if (x >= 0 && x < frame_width && y >= 0 && y < frame_height) {
+                int columnIndex = x % frame_width;
+                int byteIndex = calculate_byte_index(y % frame_height, columnIndex);
+                set_pixel_off(frame, byteIndex, columnIndex);
+//                }
+            }
+        }
+    }
+}
+
+/**
+
+ * @brief Renders a filled triangle on a frame buffer using the given data.
+ *
+ * This function takes a frame buffer data and a triangle, and fills the triangle in the frame buffer.
+ * The triangle is defined by three points, and the frame buffer is defined by its dimensions.
+ *
+ * @param data Pointer to the frame buffer data.
+ * @param triangle The triangle that needs to be filled in the frame buffer.
+ * @param frame_width Width of the frame buffer.
+ * @param frame_height Height of the frame buffer.
+ */
+
+void renderer_draw_fill_by_triangle(uint8_t* data, Triangle triangle, int frame_width, int frame_height) {
+    renderer_draw_fill(
+            data,
+            (int) roundf(triangle.points[0].x), (int) roundf(triangle.points[0].y),
+            (int) roundf(triangle.points[1].x), (int) roundf(triangle.points[1].y),
+            (int) roundf(triangle.points[2].x), (int) roundf(triangle.points[2].y),
+            frame_width,
+            frame_height
+    );
 }
 
 /**
@@ -236,6 +348,19 @@ void renderer_draw_line(uint8_t* frame, int x1, int y1, int x2, int y2, int fram
         }
     }
 }
+
+/**
+ * @brief Draw a line by two 3D vectors on a given 2D raster frame
+ * @param data The raster data to draw on
+ * @param v1 The first vector representing the starting point of the line
+ * @param v2 The second vector representing the ending point of the line
+ * @param frame_width The width of the raster frame
+ * @param frame_height The height of the raster frame
+ *
+ * This function draws a line on a given raster frame by converting the 3D vectors
+ * (v1 and v2) to 2D coordinate points, rounding them to integers, and passing them
+ * to the renderer_draw_line function.
+ */
 
 void renderer_draw_line_by_vectors(uint8_t* data, Vector3 v1, Vector3 v2, int frame_width, int frame_height) {
     renderer_draw_line(
