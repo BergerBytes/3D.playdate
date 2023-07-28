@@ -27,6 +27,25 @@ inline Vector3 vector3_add(Vector3 a, Vector3 b) {
 }
 
 /**
+ * @brief Subtracts two 3D vectors.
+ *
+ * This function takes two 3D vectors as input and subtracts them to produce a new vector.
+ *
+ * @param a The first vector to subtract.
+ * @param b The second vector to subtract.
+ * @return The resulting vector after subtraction.
+ */
+
+Vector3 vector3_subtract(Vector3 a, Vector3 b) {
+    Vector3 result = {
+            .x = a.x - b.x,
+            .y = a.y - b.y,
+            .z = a.z - b.z
+    };
+    return result;
+}
+
+/**
  * Multiplies two Vector3 objects element-wise and returns the result.
  *
  * @param a - Pointer to the first Vector3 object.
@@ -84,6 +103,23 @@ inline Vector3 vector3_cross_product(Vector3 a, Vector3 b) {
             .z = a.x * b.y - a.y * b.x
     };
     return result;
+}
+
+/**
+ * @brief Calculates the dot product of two 3D vectors.
+ *
+ * The dot product of two vectors is a scalar value that represents the cosine of the angle between them,
+ * scaled by the product of their magnitudes. For two vectors u and v, the dot product is defined as:
+ *
+ * dot(u, v) = u.x * v.x + u.y * v.y + u.z * v.z
+ *
+ * @param a The first 3D vector.
+ * @param b The second 3D vector.
+ * @return The dot product of the two vectors.
+ */
+
+float vector3_dot_product(Vector3 a, Vector3 b) {
+    return a.x * b.x + a.y * b.y + a.z * b.z;
 }
 
 /**
@@ -184,3 +220,4 @@ inline float vector3_length(Vector3 vector) {
 inline float vector3_squared_length(Vector3 vector) {
     return vector.x * vector.x + vector.y * vector.y + vector.z * vector.z;
 }
+

@@ -11,11 +11,13 @@ typedef struct {
 
 // Operators:
 Vector3 vector3_add(Vector3 a, Vector3 b);
+Vector3 vector3_subtract(Vector3 a, Vector3 b);
 Vector3 vector3_multiply(Vector3 a, Vector3 b);
 Vector3 vector3_scalar_multiply(Vector3 vector, float scalar);
 
 // Vector operations:
 Vector3 vector3_cross_product(Vector3 a, Vector3 b);
+float vector3_dot_product(Vector3 a, Vector3 b);
 Vector3 vector3_normalize(Vector3 vector);
 Vector3 vector3_squared_normalize(Vector3 vector);
 
