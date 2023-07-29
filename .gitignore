@@ -62,3 +62,4 @@ dkms.conf
 /build
 *.pdx
 .DS_Store
+cmake-build-release

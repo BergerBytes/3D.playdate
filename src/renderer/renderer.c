@@ -44,9 +44,13 @@ void renderer_draw_normal(Renderer* renderer, uint8_t* data, Triangle triangle, 
 
 Vector3 renderer_transform_to_2d_space(Renderer* renderer, Vector3* vector);
 
+#if !defined(min)
 int min(int a, int b);
+#endif
 
+#if !defined(max)
 int max(int a, int b);
+#endif
 
 /**
  * \brief Creates a new renderer.
@@ -218,6 +222,7 @@ void renderer_draw(Renderer* renderer, PlaydateAPI* api) {
     api->graphics->markUpdatedRows(0, renderer->rows - 1);
 }
 
+#if !defined(min)
 /**
  * @brief Returns the minimum of two integers.
  *
@@ -234,7 +239,9 @@ void renderer_draw(Renderer* renderer, PlaydateAPI* api) {
 inline int min(int a, int b) {
     return (a < b) ? a : b;
 }
+#endif
 
+#if !defined(max)
 /**
  * @brief Returns the maximum of two integers.
  *
@@ -249,6 +256,7 @@ inline int min(int a, int b) {
 inline int max(int a, int b) {
     return (a > b) ? a : b;
 }
+#endif
 
 /**
  * Determines whether a point is inside a triangle.
@@ -269,7 +277,7 @@ inline int max(int a, int b) {
  * @return True if the point is inside the triangle, false otherwise.
  */
 
-bool point_in_triangle(int x1, int y1, int x2, int y2, int x3, int y3, int x, int y) {
+int point_in_triangle(int x1, int y1, int x2, int y2, int x3, int y3, int x, int y) {
     // Barycentric Coordinate System
     float denominator = ((y2 - y3) * (x1 - x3) + (x3 - x2) * (y1 - y3));
     float alpha = ((y2 - y3) * (x - x3) + (x3 - x2) * (y - y3)) / denominator;
