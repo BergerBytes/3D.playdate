@@ -2,4 +2,4 @@
 
 A (very) simple 3D renderer build from scratch in C for the Playdate. https://play.date
 
-![loop](https://github.com/BergerBytes/3D.playdate/assets/8371352/3ce7cdf1-1ae2-49ee-9d3a-57c91831a44a)
+![loop](https://github.com/BergerBytes/3D.playdate/assets/8371352/b81101a7-8cb9-452c-8248-5a95414d2a6a)
