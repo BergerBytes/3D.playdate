@@ -44,9 +44,13 @@ void renderer_draw_normal(Renderer* renderer, uint8_t* data, Triangle triangle, 
 
 Vector3 renderer_transform_to_2d_space(Renderer* renderer, Vector3* vector);
 
+#if !defined(min)
 int min(int a, int b);
+#endif
 
+#if !defined(max)
 int max(int a, int b);
+#endif
 
 /**
  * \brief Creates a new renderer.
@@ -221,6 +225,7 @@ void renderer_draw(Renderer* renderer, PlaydateAPI* api) {
     api->graphics->markUpdatedRows(0, renderer->rows - 1);
 }
 
+#if !defined(min)
 /**
  * @brief Returns the minimum of two integers.
  *
@@ -237,7 +242,9 @@ void renderer_draw(Renderer* renderer, PlaydateAPI* api) {
 inline int min(int a, int b) {
     return (a < b) ? a : b;
 }
+#endif
 
+#if !defined(max)
 /**
  * @brief Returns the maximum of two integers.
  *
@@ -252,6 +259,7 @@ inline int min(int a, int b) {
 inline int max(int a, int b) {
     return (a > b) ? a : b;
 }
+#endif
 
 /**
  * Determines whether a point is inside a triangle.

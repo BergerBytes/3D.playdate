@@ -17,7 +17,7 @@
  * @return The result of adding the two Vector3 objects.
  */
 
-inline Vector3 vector3_add(Vector3 a, Vector3 b) {
+Vector3 vector3_add(Vector3 a, Vector3 b) {
     Vector3 result = {
             .x = a.x + b.x,
             .y = a.y + b.y,
@@ -53,7 +53,7 @@ Vector3 vector3_subtract(Vector3 a, Vector3 b) {
  * @return The multiplication result as a new Vector3 object.
  */
 
-inline Vector3 vector3_multiply(Vector3 a, Vector3 b) {
+Vector3 vector3_multiply(Vector3 a, Vector3 b) {
     Vector3 result = {
             .x = a.x * b.x,
             .y = a.y * b.y,
@@ -79,7 +79,7 @@ inline Vector3 vector3_multiply(Vector3 a, Vector3 b) {
  * @endcode
  */
 
-inline Vector3 vector3_scalar_multiply(Vector3 vector, float scalar) {
+Vector3 vector3_scalar_multiply(Vector3 vector, float scalar) {
     Vector3 result = {
             .x = vector.x * scalar,
             .y = vector.y * scalar,
@@ -96,7 +96,7 @@ inline Vector3 vector3_scalar_multiply(Vector3 vector, float scalar) {
  * @return The cross product of the two vectors.
  */
 
-inline Vector3 vector3_cross_product(Vector3 a, Vector3 b) {
+Vector3 vector3_cross_product(Vector3 a, Vector3 b) {
     Vector3 result = {
             .x = a.y * b.z - a.z * b.y,
             .y = a.z * b.x - a.x * b.z,
@@ -136,7 +136,7 @@ float vector3_dot_product(Vector3 a, Vector3 b) {
  * @warning The function does not handle zero-length vectors, which may result in a division by zero error.
  */
 
-inline Vector3 vector3_normalize(Vector3 vector) {
+Vector3 vector3_normalize(Vector3 vector) {
     float length = vector3_length(vector);
     Vector3 result = {
             .x = vector.x / length,
@@ -156,7 +156,7 @@ inline Vector3 vector3_normalize(Vector3 vector) {
  * @return The squared normalized Vector3
  */
 
-inline Vector3 vector3_squared_normalize(Vector3 vector) {
+Vector3 vector3_squared_normalize(Vector3 vector) {
     float length = vector3_squared_length(vector);
     Vector3 result = {
             .x = vector.x / length,
@@ -183,7 +183,7 @@ inline Vector3 vector3_squared_normalize(Vector3 vector) {
 *
 */
 
-inline Vector3 vector3_midpoint(Vector3 a, Vector3 b, Vector3 c) {
+Vector3 vector3_midpoint(Vector3 a, Vector3 b, Vector3 c) {
     Vector3 result = {
             .x = (a.x + b.x + c.x) / 3.0f,
             .y = (a.y + b.y + c.y) / 3.0f,
@@ -203,7 +203,7 @@ inline Vector3 vector3_midpoint(Vector3 a, Vector3 b, Vector3 c) {
  * @return The length of the Vector3.
  */
 
-inline float vector3_length(Vector3 vector) {
+float vector3_length(Vector3 vector) {
     return sqrtf(vector.x * vector.x + vector.y * vector.y + vector.z * vector.z);
 }
 
@@ -217,7 +217,7 @@ inline float vector3_length(Vector3 vector) {
  * @return The squared length of the Vector3.
  */
 
-inline float vector3_squared_length(Vector3 vector) {
+float vector3_squared_length(Vector3 vector) {
     return vector.x * vector.x + vector.y * vector.y + vector.z * vector.z;
 }
 
