@@ -66,6 +66,7 @@ Renderer* renderer_create(PlaydateAPI* api, int refreshRate, int scale) {
     renderer->scale = scale;
     renderer->rows = LCD_ROWS / scale;
     renderer->columns = LCD_COLUMNS / scale;
+    renderer->directionalLight = (Vector3) {.x = 1.0f, .y = -1.0f, .z = -1.0f};
     renderer->cameraPosition = (Vector3) {.x = 0.0f, .y = 0.0f, .z = 0.0f};
     renderer->projectionMatrix = matrix4X4_projection(
             60,
@@ -149,7 +150,7 @@ void renderer_draw(Renderer* renderer, PlaydateAPI* api) {
 
     uint8_t* data = graphics->getFrame();
 
-    graphics->clear(kColorBlack);
+    graphics->clear(kColorWhite);
 
     // For each triangle in mesh
     for (int i = 0; i < mesh.triangleCount; i++) {
@@ -173,8 +174,10 @@ void renderer_draw(Renderer* renderer, PlaydateAPI* api) {
             triangleTranslated.points[p].z += 3.0f;
         }
 
+        Vector3 normal = triangle_normal(&triangleTranslated);
+
         float dot = vector3_dot_product(
-                triangle_normal(&triangleTranslated),
+                normal,
                 vector3_subtract(
                         triangleTranslated.points[0],
                         renderer->cameraPosition
@@ -196,7 +199,7 @@ void renderer_draw(Renderer* renderer, PlaydateAPI* api) {
             renderer_transform_to_2d_space(renderer, &triangleProjected.points[p]);
         }
 
-        float brightness = i / 11.0f;
+        float brightness = (vector3_dot_product(normal, renderer->directionalLight) + 1.0f) / 2.0f;
 
         renderer_draw_fill_by_triangle(
                 data,
@@ -269,7 +272,7 @@ inline int max(int a, int b) {
  * @return True if the point is inside the triangle, false otherwise.
  */
 
-bool point_in_triangle(int x1, int y1, int x2, int y2, int x3, int y3, int x, int y) {
+int point_in_triangle(int x1, int y1, int x2, int y2, int x3, int y3, int x, int y) {
     // Barycentric Coordinate System
     float denominator = ((y2 - y3) * (x1 - x3) + (x3 - x2) * (y1 - y3));
     float alpha = ((y2 - y3) * (x - x3) + (x3 - x2) * (y - y3)) / denominator;

@@ -16,6 +16,7 @@ typedef struct {
     int rows;
     int columns;
 
+    Vector3 directionalLight;
     Vector3 cameraPosition;
     Matrix4x4 projectionMatrix;
 } Renderer;
